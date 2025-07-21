@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, X, Calendar, CheckSquare, Square, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, X, Calendar, CheckSquare, Square, ArrowLeft, Edit2, Check } from 'lucide-react';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { useLocalization } from '../context/LanguageContext';
 
 export default function ProjectPage({ project, onUpdateProject, onBack, onViewNote }) {
     const { t } = useLocalization();
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [projectName, setProjectName] = useState(project.name);
     const [newTaskText, setNewTaskText] = useState('');
     const [dueDate, setDueDate] = useState('');
     const [newNoteTitle, setNewNoteTitle] = useState('');
@@ -12,6 +14,23 @@ export default function ProjectPage({ project, onUpdateProject, onBack, onViewNo
     const [description, setDescription] = useState(project.description || '');
     const [keywords, setKeywords] = useState(project.keywords || []);
     const [newKeyword, setNewKeyword] = useState('');
+
+    // Sincroniza el nombre del proyecto si el prop cambia
+    useEffect(() => {
+        setProjectName(project.name);
+    }, [project.name]);
+
+    const handleNameUpdate = () => {
+        if (projectName.trim() && projectName.trim() !== project.name) {
+            onUpdateProject(project.id, { name: projectName.trim() });
+        }
+        setIsEditingName(false);
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditingName(false);
+        setProjectName(project.name);
+    };
 
     const handleUpdateDescription = () => { if (description !== project.description) { onUpdateProject(project.id, { description }); } };
     const handleAddKeyword = () => { const trimmed = newKeyword.trim(); if (trimmed && !keywords.includes(trimmed)) { const updated = [...keywords, trimmed]; setKeywords(updated); onUpdateProject(project.id, { keywords: updated }); setNewKeyword(''); } };
@@ -26,7 +45,29 @@ export default function ProjectPage({ project, onUpdateProject, onBack, onViewNo
         <div className="animate-fade-in">
             <header className="mb-8">
                 <button onClick={onBack} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-4 transition-colors"><ArrowLeft size={20} />{t('backToDashboard')}</button>
-                <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white">{project.name}</h1>
+                <div className="flex items-center gap-4">
+                    {isEditingName ? (
+                        <>
+                            <input
+                                type="text"
+                                value={projectName}
+                                onChange={(e) => setProjectName(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleNameUpdate()}
+                                className="text-4xl font-extrabold text-slate-900 dark:text-white bg-transparent border-b-2 border-blue-500 focus:outline-none w-full"
+                                autoFocus
+                            />
+                            <button onClick={handleNameUpdate} className="p-2 text-green-500 hover:bg-green-100 rounded-full transition-colors"><Check size={24} /></button>
+                            <button onClick={handleCancelEdit} className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors"><X size={24} /></button>
+                        </>
+                    ) : (
+                        <>
+                            <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mr-2">{project.name}</h1>
+                            <button onClick={() => setIsEditingName(true)} className="p-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
+                                <Edit2 size={20} />
+                            </button>
+                        </>
+                    )}
+                </div>
             </header>
             <main className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="flex flex-col gap-8">
