@@ -1,6 +1,6 @@
 # Gestor de Proyectos
 
-Una aplicación web moderna y "local-first" para organizar tus ideas, proyectos y tareas en un solo lugar.
+Una aplicación web moderna, "local-first" y PWA (Progressive Web App) para organizar tus ideas, proyectos y tareas en un solo lugar.
 
 **[➡️ Ver la aplicación en vivo](https://pablogguizar.github.io/gestor-proyectos/)**
 
@@ -8,10 +8,12 @@ Una aplicación web moderna y "local-first" para organizar tus ideas, proyectos 
 
 ## ✨ Funcionalidades Principales
 
-Este gestor de proyectos está diseñado para ser rápido, privado y potente. Todas tus datos se guardan directamente en tu navegador, dándote control total sobre tu información.
+Este gestor de proyectos está diseñado para ser rápido, privado y potente. Todas tus datos se guardan directamente en tu navegador o, si lo prefieres, en un archivo local en tu disco.
 
-* **🗄️ Almacenamiento 100% Local:** Utiliza la base de datos IndexedDB de tu navegador a través de Dexie.js. Tus datos nunca salen de tu dispositivo.
-* **📂 Gestión Completa de Proyectos (CRUD):** Crea, lee, actualiza y elimina proyectos de forma sencilla.
+* **🗄️ Almacenamiento Local (Local-First):** Utiliza la base de datos IndexedDB de tu navegador a través de Dexie.js para un acceso sin conexión rápido y fiable.
+* **💾 Acceso al Sistema de Archivos:** Usa la File System Access API para abrir, leer y guardar tus proyectos directamente en un archivo `.json` en tu computadora. ¡Tus datos, tu control!
+* **⭐ PWA Instalable:** Funciona como una Progressive Web App. Puedes "instalarla" en tu escritorio o móvil para una experiencia similar a una aplicación nativa, con acceso sin conexión.
+* **✏️ Gestión Completa de Proyectos (CRUD):** Crea, lee, actualiza y elimina proyectos de forma sencilla, incluyendo la capacidad de editar sus nombres.
 * **📝 Tareas, Notas y Detalles:** Cada proyecto puede contener:
     * Una lista de **tareas** con fechas de vencimiento opcionales.
     * Una lista de **notas** con título y contenido.
@@ -19,7 +21,6 @@ Este gestor de proyectos está diseñado para ser rápido, privado y potente. To
 * **✍️ Soporte de Texto Enriquecido:** Usa Markdown simple (`#`, `##`, `**negrita**`, `*cursiva*`) en las descripciones y notas para dar formato a tu texto.
 * **🔍 Búsqueda y Filtrado:** Encuentra proyectos rápidamente usando la barra de búsqueda o filtrando por palabras clave.
 * **🗓️ Vista de Próximas Tareas:** Un panel lateral te muestra de un vistazo las tareas con fecha límite en los próximos 7 días.
-* **🔄 Importar y Exportar Datos:** Respalda toda tu información en un archivo `.json` y restáurala cuando lo necesites. ¡Tus datos son tuyos!
 * **🎨 Selector de Tema:** Elige entre tema Claro, Oscuro o el que use tu Sistema Operativo. Tu preferencia se guarda.
 * **🌐 Soporte Multi-idioma (i18n):** La interfaz está disponible en Español, Inglés, Catalán, Euskera y Gallego.
 
@@ -32,6 +33,7 @@ Este gestor de proyectos está diseñado para ser rápido, privado y potente. To
 * **Tailwind CSS:** Para un diseño estilizado, responsivo y personalizable.
 * **Dexie.js:** Como una envoltura amigable sobre IndexedDB para la base de datos local.
 * **Lucide React:** Para los iconos limpios y consistentes.
+* **vite-plugin-pwa:** Para automatizar la generación de las capacidades PWA.
 
 ---
 

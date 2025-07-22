@@ -2,30 +2,46 @@
 // ARCHIVO: src/pages/DashboardPage.jsx
 // Representa la pantalla principal (el tablero).
 // =======================================================================
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Search, Upload, Download, HelpCircle } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Plus, Search, HelpCircle, FolderOpen, Save } from 'lucide-react';
 import ProjectCard from '../components/ProjectCard';
 import UpcomingTasksSidebar from '../components/UpcomingTasksSidebar';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useLocalization } from '../context/LanguageContext';
 
-export default function DashboardPage({ projects, onAddProject, onOpenProject, onDeleteProject, isLoading, onExport, onImport, onOpenHelp, theme, setTheme }) {
+export default function DashboardPage({ 
+    projects, 
+    onAddProject, 
+    onOpenProject, 
+    onDeleteProject, 
+    isLoading, 
+    onOpenHelp, 
+    theme, 
+    setTheme,
+    onOpenFile,
+    onSaveFile 
+}) {
     const { t } = useLocalization();
     const [newProjectName, setNewProjectName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedKeyword, setSelectedKeyword] = useState(t('allKeywords'));
-    const importInputRef = useRef(null);
 
-    const handleAdd = () => { onAddProject(newProjectName); setNewProjectName(''); };
+    const handleAdd = () => { 
+        if (newProjectName.trim()) {
+            onAddProject(newProjectName); 
+            setNewProjectName(''); 
+        }
+    };
 
     const allKeywords = useMemo(() => {
         const keywords = new Set([t('allKeywords')]);
-        (projects || []).forEach(p => { (p.keywords || []).forEach(k => keywords.add(k)); });
+        (projects || []).forEach(p => { 
+            (p.keywords || []).forEach(k => keywords.add(k)); 
+        });
         return Array.from(keywords);
     }, [projects, t]);
     
-    // Actualizar el keyword seleccionado si el idioma cambia
     useEffect(() => {
         setSelectedKeyword(t('allKeywords'));
     }, [t]);
@@ -41,24 +57,21 @@ export default function DashboardPage({ projects, onAddProject, onOpenProject, o
         });
     }, [projects, searchTerm, selectedKeyword, t]);
 
-    const handleImportClick = () => { importInputRef.current.click(); };
-    const handleFileChange = (event) => { const file = event.target.files[0]; onImport(file); event.target.value = null; };
-
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
                 <header className="mb-8">
-                    <div className="flex justify-between items-start gap-4">
-                        <div>
+                    {/* **LA CORRECCIÓN ESTÁ EN LA LÍNEA SIGUIENTE** */}
+                    <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
+                        <div className="flex-grow">
                             <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white">{t('dashboardTitle')}</h1>
                             <p className="text-slate-600 dark:text-slate-400 mt-1">{t('dashboardSubtitle')}</p>
                         </div>
-                        <div className="flex flex-shrink-0 items-center flex-wrap gap-2">
+                        <div className="flex-shrink-0 flex items-center flex-wrap gap-2">
                             <LanguageSwitcher />
                             <ThemeSwitcher theme={theme} setTheme={setTheme} />
-                            <input type="file" accept=".json" ref={importInputRef} onChange={handleFileChange} className="hidden" />
-                            <button onClick={handleImportClick} title={t('import')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><Upload size={18} /></button>
-                            <button onClick={onExport} title={t('export')} className="bg-blue-600 text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors"><Download size={18} /></button>
+                            <button onClick={onOpenFile} title={t('openFile')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><FolderOpen size={18} /> {t('openFile')}</button>
+                            <button onClick={onSaveFile} title={t('saveFile')} className="bg-blue-600 text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors"><Save size={18} /> {t('saveFile')}</button>
                             <button onClick={onOpenHelp} title={t('help')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><HelpCircle size={18} /></button>
                         </div>
                     </div>
