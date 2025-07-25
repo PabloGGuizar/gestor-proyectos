@@ -1,6 +1,6 @@
 // =======================================================================
 // ARCHIVO: src/components/SyncModal.jsx
-// VERSIÓN ACTUALIZADA CON i18n
+// VERSIÓN FINAL COMPLETA
 // =======================================================================
 import React, { useState, useEffect, useRef } from 'react';
 import Peer from 'peerjs';
@@ -8,14 +8,16 @@ import QRCode from 'react-qr-code';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { X, Wifi, ScanLine } from 'lucide-react';
 import { db } from '../services/db';
-import { useLocalization } from '../context/LanguageContext'; // Importar el hook
+import { useLocalization } from '../context/LanguageContext';
 
 export default function SyncModal({ onClose, onDataSynced }) {
-  const { t } = useLocalization(); // Usar el hook
+  const { t } = useLocalization();
   const [peerId, setPeerId] = useState('');
-  const [status, setStatus] = useState('initializing');
+  const [status, setStatus] = useState('initializing'); // initializing, waiting, scanning, connected, syncing
+  const [scanError, setScanError] = useState(null);
   const peerRef = useRef(null);
   const connRef = useRef(null);
+  const scannerRef = useRef(null);
 
   useEffect(() => {
     const peer = new Peer();
@@ -40,27 +42,43 @@ export default function SyncModal({ onClose, onDataSynced }) {
     };
   }, [onDataSynced]);
 
-  const handleStartScan = () => {
-    setStatus('scanning');
-    const qrScanner = new Html5QrcodeScanner(
-      "qr-reader", 
-      { fps: 10, qrbox: 250 },
-      false
-    );
+  useEffect(() => {
+    if (status === 'scanning' && !scannerRef.current) {
+      const scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 }, false);
+      scannerRef.current = scanner;
 
-    const onScanSuccess = async (decodedText) => {
-      await qrScanner.clear();
-      const conn = peerRef.current.connect(decodedText);
-      connRef.current = conn;
-      conn.on('open', async () => {
-        setStatus('connected');
-        const allProjects = await db.projects.toArray();
-        conn.send({ projects: allProjects });
-        onClose();
-      });
+      const onScanSuccess = (decodedText) => {
+        const conn = peerRef.current.connect(decodedText);
+        connRef.current = conn;
+        conn.on('open', async () => {
+          setStatus('connected');
+          const allProjects = await db.projects.toArray();
+          conn.send({ projects: allProjects });
+          onClose();
+        });
+      };
+      
+      const onScanError = (error) => {
+        console.error("Error del escáner QR:", error);
+        setScanError("No se pudo iniciar la cámara. Revisa los permisos del navegador.");
+      };
+      
+      scanner.render(onScanSuccess, onScanError);
+    }
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(error => {
+          console.error("Fallo al limpiar el escáner.", error);
+        });
+        scannerRef.current = null;
+      }
     };
-    
-    qrScanner.render(onScanSuccess);
+  }, [status, onClose]);
+
+  const handleStartScan = () => {
+    setScanError(null);
+    setStatus('scanning');
   };
 
   const renderContent = () => {
@@ -84,6 +102,7 @@ export default function SyncModal({ onClose, onDataSynced }) {
         return (
             <div>
                 <p className="mb-4">{t('syncCameraHelp')}</p>
+                {scanError && <p className="p-2 bg-red-100 text-red-700 rounded-md mb-4">{scanError}</p>}
                 <div id="qr-reader" style={{ width: '100%' }}></div>
             </div>
         );
@@ -97,11 +116,13 @@ export default function SyncModal({ onClose, onDataSynced }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
       <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-6 text-center">
         <header className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold flex items-center gap-2"><Wifi />{t('syncTitle')}</h3>
-          <button onClick={onClose}><X /></button>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <X className="text-slate-600 dark:text-slate-300" />
+          </button>
         </header>
         <div className="flex flex-col items-center">
             {renderContent()}
