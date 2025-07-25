@@ -1,9 +1,9 @@
 // =======================================================================
 // ARCHIVO: src/pages/DashboardPage.jsx
-// Representa la pantalla principal (el tablero).
+// VERSIÓN FINAL CORREGIDA
 // =======================================================================
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, HelpCircle, FolderOpen, Save } from 'lucide-react';
+import { Plus, Search, HelpCircle, FolderOpen, Save, Wifi } from 'lucide-react';
 import ProjectCard from '../components/ProjectCard';
 import UpcomingTasksSidebar from '../components/UpcomingTasksSidebar';
 import ThemeSwitcher from '../components/ThemeSwitcher';
@@ -20,7 +20,8 @@ export default function DashboardPage({
     theme, 
     setTheme,
     onOpenFile,
-    onSaveFile 
+    onSaveFile,
+    onOpenSync // Prop correcta que viene de App.jsx
 }) {
     const { t } = useLocalization();
     const [newProjectName, setNewProjectName] = useState('');
@@ -61,7 +62,6 @@ export default function DashboardPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
                 <header className="mb-8">
-                    {/* **LA CORRECCIÓN ESTÁ EN LA LÍNEA SIGUIENTE** */}
                     <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
                         <div className="flex-grow">
                             <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white">{t('dashboardTitle')}</h1>
@@ -70,8 +70,12 @@ export default function DashboardPage({
                         <div className="flex-shrink-0 flex items-center flex-wrap gap-2">
                             <LanguageSwitcher />
                             <ThemeSwitcher theme={theme} setTheme={setTheme} />
-                            <button onClick={onOpenFile} title={t('openFile')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><FolderOpen size={18} /> {t('openFile')}</button>
-                            <button onClick={onSaveFile} title={t('saveFile')} className="bg-blue-600 text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors"><Save size={18} /> {t('saveFile')}</button>
+                            {/* CORRECCIÓN AQUÍ: Usar onOpenSync */}
+                            <button onClick={onOpenSync} title={t('syncDevices')} className="bg-green-600 text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-green-700 transition-colors">
+                                <Wifi size={18} /> <span className="hidden sm:inline">{t('syncDevices')}</span>
+                            </button>
+                            <button onClick={onOpenFile} title={t('openFile')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><FolderOpen size={18} /> <span className="hidden sm:inline">{t('openFile')}</span></button>
+                            <button onClick={onSaveFile} title={t('saveFile')} className="bg-blue-600 text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors"><Save size={18} /> <span className="hidden sm:inline">{t('saveFile')}</span></button>
                             <button onClick={onOpenHelp} title={t('help')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><HelpCircle size={18} /></button>
                         </div>
                     </div>

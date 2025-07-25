@@ -2,6 +2,7 @@
 // ARCHIVO: src/App.jsx
 // Este componente ahora actúa como el "enrutador" principal. Decide qué
 // página mostrar y maneja el estado global de la navegación.
+// VERSIÓN CORREGIDA
 // =======================================================================
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -15,6 +16,9 @@ import ConfirmationModal from './components/ConfirmationModal';
 import NoteViewModal from './components/NoteViewModal';
 import HelpModal from './components/HelpModal';
 import Footer from './components/Footer';
+// Importa el nuevo modal de sincronización
+import SyncModal from './components/SyncModal'; 
+import { Wifi } from 'lucide-react'; // Puedes añadirlo al Dashboard si quieres
 
 export default function App() {
     const [theme, setTheme] = useTheme();
@@ -27,27 +31,89 @@ export default function App() {
     const [viewingNote, setViewingNote] = useState(null);
     const [importConfirmation, setImportConfirmation] = useState(null);
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-    const [fileHandle, setFileHandle] = useState(null); // La referencia se mantiene solo en el estado
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false); // Estado para el modal de Sync
+    const [fileHandle, setFileHandle] = useState(null);
 
     const projects = useLiveQuery(() => db.projects.orderBy('createdAt').reverse().toArray(), [], []);
     const isLoading = projects === undefined;
 
-    const handleAddProject = async (name) => { if (name.trim()) await db.projects.add({ name: name.trim(), description: '', keywords: [], notes: [], tasks: [], createdAt: new Date() }); };
-    const handleConfirmDelete = async () => { if (itemToDelete) { await db.projects.delete(itemToDelete); setItemToDelete(null); if (selectedProjectId === itemToDelete) navigateToDashboard(); } };
-    const handleUpdateProject = async (id, data) => { await db.projects.update(id, data); };
+    const handleAddProject = async (name) => { 
+        if (name.trim()) {
+            await db.projects.add({ 
+                name: name.trim(), 
+                description: '', 
+                keywords: [], 
+                notes: [], 
+                tasks: [], 
+                createdAt: new Date(),
+                updatedAt: new Date() // Añadir fecha de actualización al crear
+            }); 
+        }
+    };
+    
+    const handleConfirmDelete = async () => { 
+        if (itemToDelete) { 
+            await db.projects.delete(itemToDelete); 
+            setItemToDelete(null); 
+            if (selectedProjectId === itemToDelete) navigateToDashboard(); 
+        } 
+    };
+
+    // FUNCIÓN ÚNICA Y CORREGIDA:
+    const handleUpdateProject = async (id, data) => { 
+        await db.projects.update(id, { ...data, updatedAt: new Date() }); 
+    };
     
     const confirmImport = async () => {
         if (!importConfirmation) return;
         try {
             await db.transaction('rw', db.projects, async () => {
                 await db.projects.clear();
-                const projectsToImport = importConfirmation.map(p => ({ ...p, createdAt: new Date(p.createdAt), id: undefined }));
+                const projectsToImport = importConfirmation.map(p => ({ 
+                    ...p, 
+                    createdAt: new Date(p.createdAt),
+                    updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(p.createdAt), // Asegura que exista
+                    id: undefined 
+                }));
                 await db.projects.bulkAdd(projectsToImport);
             });
             setImportConfirmation(null);
         } catch (e) {
             console.error("Error importing data:", e);
             setError(t('importError'));
+        }
+    };
+    
+    // Función para manejar la fusión de datos desde WebRTC
+    const handleSyncData = async (receivedData) => {
+        if (receivedData.projects && Array.isArray(receivedData.projects)) {
+            try {
+                await db.transaction('rw', db.projects, async () => {
+                    const localProjects = await db.projects.toArray();
+                    const projectsToUpdate = [];
+                    const projectsToAdd = [];
+
+                    const localProjectsMap = new Map(localProjects.map(p => [p.id, p]));
+
+                    for (const remoteProject of receivedData.projects) {
+                        const localProject = localProjectsMap.get(remoteProject.id);
+
+                        if (!localProject) {
+                            projectsToAdd.push(remoteProject);
+                        } else if (new Date(remoteProject.updatedAt) > new Date(localProject.updatedAt)) {
+                            projectsToUpdate.push(remoteProject);
+                        }
+                    }
+
+                    if(projectsToUpdate.length > 0) await db.projects.bulkPut(projectsToUpdate);
+                    if(projectsToAdd.length > 0) await db.projects.bulkAdd(projectsToAdd);
+                });
+                console.log("Sincronización completada.");
+                setIsSyncModalOpen(false);
+            } catch (e) {
+                console.error("Error durante la fusión de datos:", e);
+                setError("Error al sincronizar los proyectos.");
+            }
         }
     };
 
@@ -73,7 +139,7 @@ export default function App() {
 
             if (projectsToLoad) {
                 setImportConfirmation(projectsToLoad);
-                setFileHandle(handle); // Se guarda la referencia solo en el estado local
+                setFileHandle(handle);
             } else {
                 throw new Error(t('jsonFormatError'));
             }
@@ -96,7 +162,7 @@ export default function App() {
                     suggestedName: `proyectos-backup.json`,
                     types: [{ description: 'Archivos JSON', accept: { 'application/json': ['.json'] } }],
                 });
-                setFileHandle(handle); // Se vincula el nuevo archivo
+                setFileHandle(handle);
             } catch (err) {
                 if (err.name !== 'AbortError') console.error("Error en 'Guardar como':", err);
                 return;
@@ -135,7 +201,9 @@ export default function App() {
                     isLoading={isLoading} 
                     onOpenFile={handleOpenFilePicker}
                     onSaveFile={handleSaveFile}
-                    onOpenHelp={() => setIsHelpModalOpen(true)} 
+                    onOpenHelp={() => setIsHelpModalOpen(true)}
+                    // Prop para abrir el modal de sync
+                    onOpenSync={() => setIsSyncModalOpen(true)}
                     theme={theme} 
                     setTheme={setTheme}
                 />}
@@ -150,6 +218,7 @@ export default function App() {
                 {importConfirmation && <ConfirmationModal title={t('importConfirmTitle')} message={t('importConfirmMessage')} onConfirm={confirmImport} onCancel={() => setImportConfirmation(null)} />}
                 {viewingNote && <NoteViewModal note={viewingNote} onClose={() => setViewingNote(null)} />}
                 {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
+                {isSyncModalOpen && <SyncModal onClose={() => setIsSyncModalOpen(false)} onDataSynced={handleSyncData} />}
             </main>
             <Footer />
         </div>
