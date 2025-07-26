@@ -1,6 +1,6 @@
 // =======================================================================
 // ARCHIVO: src/App.jsx
-// VERSIÓN CON SINCRONIZACIÓN CONTINUA EN TIEMPO REAL
+// VERSIÓN FINAL CON SINCRONIZACIÓN MANUAL Y CONTINUA
 // =======================================================================
 import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -21,6 +21,7 @@ export default function App() {
     const [theme, setTheme] = useTheme();
     const { t } = useLocalization();
     
+    // ... (otros estados no cambian)
     const [error, setError] = useState(null);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [currentPage, setCurrentPage] = useState('dashboard');
@@ -31,13 +32,11 @@ export default function App() {
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
     const [fileHandle, setFileHandle] = useState(null);
 
-    // Refs para manejar la conexión PeerJS
     const peerRef = useRef(null);
     const connRef = useRef(null);
 
-    // Hook para la sincronización en tiempo real
+    // Efecto para inicializar PeerJS y manejar conexiones
     useEffect(() => {
-        // Inicializar PeerJS
         const peer = new Peer({
             config: {
                 iceServers: [
@@ -48,35 +47,16 @@ export default function App() {
         });
         peerRef.current = peer;
 
-        // Escuchar conexiones entrantes
         peer.on('connection', (conn) => {
             connRef.current = conn;
             setupConnectionListeners(conn);
         });
 
-        // Escuchar cambios en la base de datos
-        const handleDbChanges = (changes) => {
-            if (connRef.current && connRef.current.open) {
-                // Solo enviar si hay una conexión activa y no somos el origen del cambio
-                const relevantChanges = changes.filter(change => !change.source); // Evitar bucles
-                if (relevantChanges.length > 0) {
-                    connRef.current.send({ type: 'db-changes', payload: relevantChanges });
-                }
-            }
-        };
-
-        db.on('changes', handleDbChanges);
-
-        return () => {
-            db.on('changes').unsubscribe(handleDbChanges);
-            if (peer) peer.destroy();
-        };
+        return () => { if (peer) peer.destroy(); };
     }, []);
-    
-    // Función para manejar los datos recibidos (tanto iniciales como cambios)
+
     const handleDataReceived = async (data) => {
         if (data.type === 'full-sync') {
-            // Lógica de fusión para la sincronización inicial
             await db.transaction('rw', db.projects, async () => {
                 const localProjects = await db.projects.toArray();
                 const localMap = new Map(localProjects.map(p => [p.id, p]));
@@ -84,27 +64,14 @@ export default function App() {
                 for (const remoteProject of data.payload) {
                     const localProject = localMap.get(remoteProject.id);
                     if (!localProject || new Date(remoteProject.updatedAt) > new Date(localProject.updatedAt)) {
-                        await db.projects.put(remoteProject, undefined, { source: 'sync' });
+                        await db.projects.put(remoteProject);
                     }
                 }
             });
-        } else if (data.type === 'db-changes') {
-            // Aplicar cambios incrementales
-            await db.transaction('rw', db.projects, async () => {
-                for (const change of data.payload) {
-                    switch (change.type) {
-                        case 1: // CREATE
-                            await db.projects.put(change.obj, undefined, { source: 'sync' });
-                            break;
-                        case 2: // UPDATE
-                            await db.projects.update(change.key, change.mods, { source: 'sync' });
-                            break;
-                        case 3: // DELETE
-                            await db.projects.delete(change.key, { source: 'sync' });
-                            break;
-                    }
-                }
-            });
+        } else if (data.type === 'project-update') {
+            await db.projects.put(data.payload);
+        } else if (data.type === 'project-delete') {
+            await db.projects.delete(data.payload);
         }
     };
     
@@ -112,22 +79,51 @@ export default function App() {
         conn.on('open', async () => {
             const allProjects = await db.projects.toArray();
             conn.send({ type: 'full-sync', payload: allProjects });
-            setIsSyncModalOpen(false); // Cierra el modal al conectar
+            setIsSyncModalOpen(false);
         });
         conn.on('data', handleDataReceived);
-        conn.on('close', () => { connRef.current = null; });
-        conn.on('error', () => { connRef.current = null; });
+        conn.on('close', () => { connRef.current = null; console.log("Conexión cerrada."); });
+        conn.on('error', () => { connRef.current = null; console.log("Conexión perdida."); });
     };
 
     const projects = useLiveQuery(() => db.projects.orderBy('createdAt').reverse().toArray(), [], []);
     const isLoading = projects === undefined;
 
-    const handleAddProject = async (name) => { if (name.trim()) await db.projects.add({ name: name.trim(), description: '', keywords: [], notes: [], tasks: [], createdAt: new Date(), updatedAt: new Date() }); };
-    const handleConfirmDelete = async () => { if (itemToDelete) { await db.projects.delete(itemToDelete); setItemToDelete(null); if (selectedProjectId === itemToDelete) navigateToDashboard(); } };
-    const handleUpdateProject = async (id, data) => { await db.projects.update(id, { ...data, updatedAt: new Date() }); };
+    // ========= CAMBIOS EN LAS FUNCIONES DE MODIFICACIÓN DE DATOS =========
+    const handleAddProject = async (name) => {
+        if (name.trim()) {
+            const newProject = {
+                name: name.trim(), description: '', keywords: [], notes: [], tasks: [], 
+                createdAt: new Date(), updatedAt: new Date()
+            };
+            const newId = await db.projects.add(newProject);
+            if (connRef.current && connRef.current.open) {
+                connRef.current.send({ type: 'project-update', payload: { ...newProject, id: newId } });
+            }
+        }
+    };
     
-    // ... (el resto de funciones como confirmImport, handleOpenFilePicker, etc., no cambian)
+    const handleUpdateProject = async (id, data) => {
+        const updatedData = { ...data, updatedAt: new Date() };
+        await db.projects.update(id, updatedData);
+        if (connRef.current && connRef.current.open) {
+            const updatedProject = await db.projects.get(id);
+            connRef.current.send({ type: 'project-update', payload: updatedProject });
+        }
+    };
 
+    const handleConfirmDelete = async () => {
+        if (itemToDelete) {
+            await db.projects.delete(itemToDelete);
+            if (connRef.current && connRef.current.open) {
+                connRef.current.send({ type: 'project-delete', payload: itemToDelete });
+            }
+            setItemToDelete(null);
+            if (selectedProjectId === itemToDelete) navigateToDashboard();
+        }
+    };
+
+    // ... (El resto de funciones y el return no cambian)
     const confirmImport = async () => { /* ...código sin cambios... */ };
     const handleOpenFilePicker = async () => { /* ...código sin cambios... */ };
     const handleSaveFile = async () => { /* ...código sin cambios... */ };
