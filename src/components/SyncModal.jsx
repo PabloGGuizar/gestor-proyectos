@@ -1,12 +1,12 @@
 // =======================================================================
 // ARCHIVO: src/components/SyncModal.jsx
-// VERSIÓN FINAL CON SERVIDOR TURN Y TIMEOUTS DE CONEXIÓN
+// VERSIÓN CON SINCRONIZACIÓN BIDIRECCIONAL
 // =======================================================================
 import React, { useState, useEffect, useRef } from 'react';
 import Peer from 'peerjs';
 import QRCode from 'react-qr-code';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { X, Wifi, ScanLine } from 'lucide-react';
+import { X, Wifi, ScanLine, CheckCircle } from 'lucide-react';
 import { db } from '../services/db';
 import { useLocalization } from '../context/LanguageContext';
 
@@ -17,40 +17,49 @@ export default function SyncModal({ onClose, onDataSynced }) {
   const [scanError, setScanError] = useState(null);
   const peerRef = useRef(null);
   const scannerRef = useRef(null);
-  const connectionTimeoutRef = useRef(null);
 
   useEffect(() => {
-    // ========= CAMBIO 1: Configuración de PeerJS con servidor TURN =========
-    // Esto aumenta drásticamente la probabilidad de conexión a través de redes restrictivas.
     const peer = new Peer({
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-          },
+          { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
         ],
       },
     });
     peerRef.current = peer;
 
-    peer.on('open', (id) => {
-      if (id) {
-        setPeerId(id);
-        setStatus('waiting');
-      } else {
+    // Esta función centraliza la lógica para cualquier conexión
+    const setupConnectionListeners = (conn) => {
+      // 1. Cuando la conexión esté lista, envía nuestros datos
+      conn.on('open', async () => {
+        setStatus('connected');
+        const allProjects = await db.projects.toArray();
+        conn.send({ projects: allProjects });
+      });
+
+      // 2. Cuando recibimos datos, los procesamos y confirmamos el éxito
+      conn.on('data', (data) => {
+        onDataSynced(data);
+        setStatus('synced'); // ¡Nuevo estado de éxito!
+        setTimeout(onClose, 1500); // Cierra el modal tras 1.5s
+      });
+
+      conn.on('error', (err) => {
+        console.error('Error de conexión:', err);
+        setScanError(`${t('syncConnectionError')} (Tipo: ${err.type})`);
         setStatus('error');
-        setScanError(t('syncPeerError'));
-      }
-    });
-    
+      });
+    };
+
+    // Manejar conexiones ENTRANTES (cuando nuestro QR es escaneado)
     peer.on('connection', (conn) => {
-      clearTimeout(connectionTimeoutRef.current);
-      setStatus('connected');
-      conn.on('data', (data) => { setStatus('syncing'); onDataSynced(data); });
-      conn.on('error', (err) => console.error('Error en conexión PeerJS (entrante):', err));
+      setupConnectionListeners(conn);
+    });
+
+    peer.on('open', (id) => {
+      if (id) { setPeerId(id); setStatus('waiting'); } 
+      else { setStatus('error'); setScanError(t('syncPeerError')); }
     });
     
     peer.on('error', (err) => {
@@ -59,10 +68,8 @@ export default function SyncModal({ onClose, onDataSynced }) {
       setStatus('error');
     });
 
-    return () => {
-      if (peer) peer.destroy();
-    };
-  }, [onDataSynced, t]);
+    return () => { if (peer) peer.destroy(); };
+  }, [onDataSynced, t, onClose]);
 
   useEffect(() => {
     if (status === 'scanning' && !scannerRef.current) {
@@ -78,29 +85,28 @@ export default function SyncModal({ onClose, onDataSynced }) {
         
         setStatus('connecting');
         
-        // ========= CAMBIO 2: Timeout para la conexión =========
-        // Si no se conecta en 15 segundos, muestra un error.
-        connectionTimeoutRef.current = setTimeout(() => {
-            setStatus('error');
-            setScanError(t('syncTimeoutError'));
-        }, 15000);
-
+        // Manejar conexiones SALIENTES (cuando nosotros escaneamos un QR)
         const conn = peerRef.current.connect(decodedText, { reliable: true });
-
-        conn.on('open', async () => {
-          clearTimeout(connectionTimeoutRef.current);
-          setStatus('connected');
-          const allProjects = await db.projects.toArray();
-          conn.send({ projects: allProjects });
-          onClose();
-        });
         
-        conn.on('error', (err) => {
-            clearTimeout(connectionTimeoutRef.current);
-            console.error('Error al establecer conexión:', err);
-            setScanError(`${t('syncConnectionError')} (Tipo: ${err.type})`);
-            setStatus('error');
-        });
+        // Usamos la misma lógica centralizada para la conexión saliente
+        const setupConnectionListeners = (conn) => {
+            conn.on('open', async () => {
+                setStatus('connected');
+                const allProjects = await db.projects.toArray();
+                conn.send({ projects: allProjects });
+            });
+            conn.on('data', (data) => {
+                onDataSynced(data);
+                setStatus('synced');
+                setTimeout(onClose, 1500);
+            });
+            conn.on('error', (err) => {
+                console.error('Error de conexión:', err);
+                setScanError(`${t('syncConnectionError')} (Tipo: ${err.type})`);
+                setStatus('error');
+            });
+        };
+        setupConnectionListeners(conn);
       };
       
       const onScanError = (error) => { /* Ignorar errores menores */ };
@@ -114,10 +120,10 @@ export default function SyncModal({ onClose, onDataSynced }) {
         scannerRef.current = null;
       }
     };
-  }, [status, onClose, t]);
+  }, [status, onClose, t, onDataSynced]);
 
   const handleStartScan = () => { setScanError(null); setStatus('scanning'); };
-  const handleRetry = () => { window.location.reload(); }; // La forma más simple de reiniciar el estado de PeerJS
+  const handleRetry = () => { window.location.reload(); };
 
   const renderContent = () => {
     switch (status) {
@@ -149,7 +155,8 @@ export default function SyncModal({ onClose, onDataSynced }) {
         return <p className="text-green-500">{t('syncConnected')}</p>;
       case 'syncing':
         return <p className="text-blue-500">{t('syncReceiving')}</p>;
-      // ========= CAMBIO 3: Estado de error con opción de reintentar =========
+      case 'synced':
+        return <div className="flex flex-col items-center gap-2 text-green-500"><CheckCircle size={32} /><p>{t('syncSuccess')}</p></div>;
       case 'error':
         return (
             <div className="flex flex-col items-center gap-4">
