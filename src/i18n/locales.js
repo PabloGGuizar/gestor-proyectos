@@ -1,6 +1,6 @@
 // =======================================================================
 // ARCHIVO: src/i18n/locales.js
-// VERSIÓN FINAL CON TODAS LAS TRADUCCIONES PARA SYNC
+// VERSIÓN FINAL CON TODAS LAS TRADUCCIONES
 // =======================================================================
 export const locales = {
   ca: { // Català
@@ -74,7 +74,10 @@ export const locales = {
     syncConnecting: 'Connectant amb l\'altre dispositiu...',
     syncConnected: 'Connectat! Sincronitzant...',
     syncReceiving: 'Rebent dades...',
-    syncConnectionError: 'No s\'ha pogut connectar. Assegura\'t que tots dos dispositius estiguin a la mateixa xarxa Wi-Fi. (Error: {error})',
+    syncConnectionError: 'No s\'ha pogut connectar. Assegura\'t que tots dos dispositius tinguin internet. (Error: {error})',
+    syncPeerError: 'No s\'ha pogut connectar al servidor de senyalització. Revisa la teva connexió a internet.',
+    syncTimeoutError: 'La connexió ha trigat massa a respondre. Intenta-ho de nou.',
+    syncGenericError: 'Ha ocorregut un error desconegut durant la sincronització.',
   },
   en: { // English
     dashboardTitle: 'Project Manager',
@@ -147,7 +150,10 @@ export const locales = {
     syncConnecting: 'Connecting to the other device...',
     syncConnected: 'Connected! Syncing...',
     syncReceiving: 'Receiving data...',
-    syncConnectionError: 'Could not connect. Make sure both devices are on the same Wi-Fi network. (Error: {error})',
+    syncConnectionError: 'Could not connect. Make sure both devices have internet access. (Error: {error})',
+    syncPeerError: 'Could not connect to the signaling server. Check your internet connection.',
+    syncTimeoutError: 'The connection timed out. Please try again.',
+    syncGenericError: 'An unknown error occurred during synchronization.',
   },
   es: { // Español
     dashboardTitle: 'Gestor de Proyectos',
@@ -220,7 +226,10 @@ export const locales = {
     syncConnecting: 'Conectando con el otro dispositivo...',
     syncConnected: '¡Conectado! Sincronizando...',
     syncReceiving: 'Recibiendo datos...',
-    syncConnectionError: 'No se pudo conectar. Asegúrate de que ambos dispositivos estén en la misma red Wi-Fi. (Error: {error})',
+    syncConnectionError: 'No se pudo conectar. Asegúrate de que ambos dispositivos tengan internet. (Error: {error})',
+    syncPeerError: 'No se pudo conectar al servidor de señalización. Revisa tu conexión a internet.',
+    syncTimeoutError: 'La conexión tardó demasiado en responder. Inténtalo de nuevo.',
+    syncGenericError: 'Ocurrió un error desconocido durante la sincronización.',
   },
   eu: { // Euskara
     dashboardTitle: 'Proiektu Kudeatzailea',
@@ -293,7 +302,10 @@ export const locales = {
     syncConnecting: 'Beste gailuarekin konektatzen...',
     syncConnected: 'Konektatuta! Sinkronizatzen...',
     syncReceiving: 'Datuak jasotzen...',
-    syncConnectionError: 'Ezin izan da konektatu. Ziurtatu bi gailuak Wi-Fi sare berean daudela. (Errorea: {error})',
+    syncConnectionError: 'Ezin izan da konektatu. Ziurtatu bi gailuak internetera konektatuta daudela. (Errorea: {error})',
+    syncPeerError: 'Ezin izan da seinaleztapen zerbitzariarekin konektatu. Egiaztatu zure internet konexioa.',
+    syncTimeoutError: 'Konexioak denbora gehiegi behar izan du erantzuteko. Saiatu berriro.',
+    syncGenericError: 'Errore ezezagun bat gertatu da sinkronizazioan.',
   },
   gl: { // Galego
     dashboardTitle: 'Xestor de Proxectos',
@@ -366,6 +378,9 @@ export const locales = {
     syncConnecting: 'Conectando co outro dispositivo...',
     syncConnected: 'Conectado! Sincronizando...',
     syncReceiving: 'Recibindo datos...',
-    syncConnectionError: 'Non se puido conectar. Asegúrate de que ambos dispositivos estean na mesma rede Wi-Fi. (Erro: {error})',
+    syncConnectionError: 'Non se puido conectar. Asegúrate de que ambos dispositivos teñan internet. (Erro: {error})',
+    syncPeerError: 'Non se puido conectar ao servidor de sinalización. Revisa a túa conexión a internet.',
+    syncTimeoutError: 'A conexión tardou demasiado en responder. Inténtao de novo.',
+    syncGenericError: 'Ocorreu un erro descoñecido durante a sincronización.',
   },
 };

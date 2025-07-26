@@ -1,6 +1,6 @@
 // =======================================================================
 // ARCHIVO: src/components/SyncModal.jsx
-// VERSIÓN CON MEJOR FEEDBACK DE CONEXIÓN Y MANEJO DE ERRORES
+// VERSIÓN FINAL CON SERVIDOR TURN Y TIMEOUTS DE CONEXIÓN
 // =======================================================================
 import React, { useState, useEffect, useRef } from 'react';
 import Peer from 'peerjs';
@@ -13,39 +13,55 @@ import { useLocalization } from '../context/LanguageContext';
 export default function SyncModal({ onClose, onDataSynced }) {
   const { t } = useLocalization();
   const [peerId, setPeerId] = useState('');
-  // ========= CAMBIO 1: Añadido nuevo estado 'connecting' =========
-  const [status, setStatus] = useState('initializing'); // initializing, waiting, scanning, connecting, connected, syncing
+  const [status, setStatus] = useState('initializing');
   const [scanError, setScanError] = useState(null);
   const peerRef = useRef(null);
   const scannerRef = useRef(null);
+  const connectionTimeoutRef = useRef(null);
 
   useEffect(() => {
-    // Usamos un host y puerto públicos de PeerJS para mayor fiabilidad
+    // ========= CAMBIO 1: Configuración de PeerJS con servidor TURN =========
+    // Esto aumenta drásticamente la probabilidad de conexión a través de redes restrictivas.
     const peer = new Peer({
-        host: 'peerjs.com',
-        path: '/peerjs',
-        secure: true,
-        port: 443
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
+        ],
+      },
     });
     peerRef.current = peer;
 
-    peer.on('open', (id) => { setPeerId(id); setStatus('waiting'); });
+    peer.on('open', (id) => {
+      if (id) {
+        setPeerId(id);
+        setStatus('waiting');
+      } else {
+        setStatus('error');
+        setScanError(t('syncPeerError'));
+      }
+    });
     
     peer.on('connection', (conn) => {
+      clearTimeout(connectionTimeoutRef.current);
       setStatus('connected');
       conn.on('data', (data) => { setStatus('syncing'); onDataSynced(data); });
       conn.on('error', (err) => console.error('Error en conexión PeerJS (entrante):', err));
     });
     
-    // ========= CAMBIO 2: Capturar errores generales de PeerJS =========
     peer.on('error', (err) => {
       console.error('Error general de PeerJS:', err);
-      // Errores comunes: 'network', 'peer-unavailable'
       setScanError(`${t('syncConnectionError')} (Tipo: ${err.type})`);
-      setStatus('waiting'); // Volver al estado inicial para reintentar
+      setStatus('error');
     });
 
-    return () => { peer.destroy(); };
+    return () => {
+      if (peer) peer.destroy();
+    };
   }, [onDataSynced, t]);
 
   useEffect(() => {
@@ -60,11 +76,19 @@ export default function SyncModal({ onClose, onDataSynced }) {
           scannerRef.current = null;
         }
         
-        setStatus('connecting'); // ========= CAMBIO 3: Mostrar estado "Conectando..." =========
+        setStatus('connecting');
         
-        const conn = peerRef.current.connect(decodedText);
+        // ========= CAMBIO 2: Timeout para la conexión =========
+        // Si no se conecta en 15 segundos, muestra un error.
+        connectionTimeoutRef.current = setTimeout(() => {
+            setStatus('error');
+            setScanError(t('syncTimeoutError'));
+        }, 15000);
+
+        const conn = peerRef.current.connect(decodedText, { reliable: true });
 
         conn.on('open', async () => {
+          clearTimeout(connectionTimeoutRef.current);
           setStatus('connected');
           const allProjects = await db.projects.toArray();
           conn.send({ projects: allProjects });
@@ -72,9 +96,10 @@ export default function SyncModal({ onClose, onDataSynced }) {
         });
         
         conn.on('error', (err) => {
+            clearTimeout(connectionTimeoutRef.current);
             console.error('Error al establecer conexión:', err);
             setScanError(`${t('syncConnectionError')} (Tipo: ${err.type})`);
-            setStatus('waiting'); // Volver al estado inicial si la conexión falla
+            setStatus('error');
         });
       };
       
@@ -92,6 +117,7 @@ export default function SyncModal({ onClose, onDataSynced }) {
   }, [status, onClose, t]);
 
   const handleStartScan = () => { setScanError(null); setStatus('scanning'); };
+  const handleRetry = () => { window.location.reload(); }; // La forma más simple de reiniciar el estado de PeerJS
 
   const renderContent = () => {
     switch (status) {
@@ -102,9 +128,8 @@ export default function SyncModal({ onClose, onDataSynced }) {
           <>
             <h4 className="font-bold mb-2">{t('syncShowQR')}</h4>
             <div className="p-4 bg-white rounded-lg">
-              {peerId && <QRCode value={peerId} />}
+              {peerId ? <QRCode value={peerId} /> : <p>{t('syncInitializing')}</p>}
             </div>
-            {scanError && <p className="p-2 bg-red-100 text-red-700 rounded-md my-4">{scanError}</p>}
             <p className="my-4">{t('syncOr')}</p>
             <button onClick={handleStartScan} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg">
               <ScanLine size={18} /> {t('syncScanQR')}
@@ -118,13 +143,20 @@ export default function SyncModal({ onClose, onDataSynced }) {
                 <div id="qr-reader" style={{ width: '100%' }}></div>
             </div>
         );
-      // ========= CAMBIO 4: Nuevo caso para el estado 'connecting' =========
       case 'connecting':
-        return <p className="text-blue-500">Conectando con el otro dispositivo...</p>;
+        return <p className="text-blue-500">{t('syncConnecting')}</p>;
       case 'connected':
         return <p className="text-green-500">{t('syncConnected')}</p>;
       case 'syncing':
         return <p className="text-blue-500">{t('syncReceiving')}</p>;
+      // ========= CAMBIO 3: Estado de error con opción de reintentar =========
+      case 'error':
+        return (
+            <div className="flex flex-col items-center gap-4">
+                <p className="p-2 bg-red-100 text-red-700 rounded-md">{scanError || t('syncGenericError')}</p>
+                <button onClick={handleRetry} className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg">Reintentar</button>
+            </div>
+        );
       default:
         return null;
     }
