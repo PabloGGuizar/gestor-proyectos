@@ -1,6 +1,6 @@
 // src/components/HelpModal.jsx
 import React from 'react';
-import { X, HardDrive, Upload, Download } from 'lucide-react';
+import { X, HardDrive, WifiOff, Download, Cloud } from 'lucide-react';
 import { useLocalization } from '../context/LanguageContext';
 
 export default function HelpModal({ onClose }) {
@@ -17,25 +17,27 @@ export default function HelpModal({ onClose }) {
         <div className="p-6 overflow-y-auto text-slate-700 dark:text-slate-300 space-y-6">
           <section>
             <h4 className="font-bold text-lg text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-              <HardDrive size={20} /> {t('helpIntro')}
+              {t('helpIntro')}
             </h4>
             <p>{t('helpIntroText')}</p>
           </section>
           <section>
-            <h4 className="font-bold text-lg text-red-600 dark:text-red-400 mb-2">{t('helpStorageTitle')}</h4>
-            <p className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-r-lg">{t('helpStorageText')}</p>
-          </section>
-          <section>
             <h4 className="font-bold text-lg text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
-              <Download size={20} /> {t('helpBackupTitle')}
+              <Cloud size={20} /> {t('helpStorageTitle')}
             </h4>
-            <p>{t('helpBackupText')}</p>
+            <p className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-4 rounded-r-lg">{t('helpStorageText')}</p>
           </section>
            <section>
             <h4 className="font-bold text-lg text-green-600 dark:text-green-400 mb-2 flex items-center gap-2">
-              <Upload size={20} /> {t('helpRestoreTitle')}
+              <WifiOff size={20} /> {t('helpOfflineTitle')}
             </h4>
-            <p>{t('helpRestoreText')}</p>
+            <p>{t('helpOfflineText')}</p>
+          </section>
+          <section>
+            <h4 className="font-bold text-lg text-slate-600 dark:text-slate-300 mb-2 flex items-center gap-2">
+              <Download size={20} /> {t('helpBackupTitle')}
+            </h4>
+            <p>{t('helpBackupText')}</p>
           </section>
         </div>
       </div>

@@ -1,49 +1,49 @@
 // =======================================================================
 // ARCHIVO: src/pages/DashboardPage.jsx
-// VERSIÓN FINAL CORREGIDA
+// VERSIÓN ACTUALIZADA PARA LA ARQUITECTURA SOLID POD
 // =======================================================================
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, HelpCircle, FolderOpen, Save, Wifi } from 'lucide-react';
+import { Plus, Search, HelpCircle, FolderOpen, Save } from 'lucide-react';
 import ProjectCard from '../components/ProjectCard';
 import UpcomingTasksSidebar from '../components/UpcomingTasksSidebar';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useLocalization } from '../context/LanguageContext';
 
-export default function DashboardPage({ 
-    projects, 
-    onAddProject, 
-    onOpenProject, 
-    onDeleteProject, 
-    isLoading, 
-    onOpenHelp, 
-    theme, 
+export default function DashboardPage({
+    projects,
+    onAddProject,
+    onOpenProject,
+    onDeleteProject,
+    isLoading,
+    onOpenHelp,
+    theme,
     setTheme,
     onOpenFile,
-    onSaveFile,
-    onOpenSync // Prop correcta que viene de App.jsx
+    onSaveFile
 }) {
     const { t } = useLocalization();
     const [newProjectName, setNewProjectName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedKeyword, setSelectedKeyword] = useState(t('allKeywords'));
 
-    const handleAdd = () => { 
+    const handleAdd = () => {
         if (newProjectName.trim()) {
-            onAddProject(newProjectName); 
-            setNewProjectName(''); 
+            onAddProject(newProjectName);
+            setNewProjectName('');
         }
     };
 
     const allKeywords = useMemo(() => {
         const keywords = new Set([t('allKeywords')]);
-        (projects || []).forEach(p => { 
-            (p.keywords || []).forEach(k => keywords.add(k)); 
+        (projects || []).forEach(p => {
+            (p.keywords || []).forEach(k => keywords.add(k));
         });
         return Array.from(keywords);
     }, [projects, t]);
-    
+
     useEffect(() => {
+        // Asegura que "Todos" se seleccione si cambia el idioma
         setSelectedKeyword(t('allKeywords'));
     }, [t]);
 
@@ -70,10 +70,7 @@ export default function DashboardPage({
                         <div className="flex-shrink-0 flex items-center flex-wrap gap-2">
                             <LanguageSwitcher />
                             <ThemeSwitcher theme={theme} setTheme={setTheme} />
-                            {/* CORRECCIÓN AQUÍ: Usar onOpenSync */}
-                            <button onClick={onOpenSync} title={t('syncDevices')} className="bg-green-600 text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-green-700 transition-colors">
-                                <Wifi size={18} /> <span className="hidden sm:inline">{t('syncDevices')}</span>
-                            </button>
+                            {/* Los botones de Importar/Exportar se mantienen como backup local */}
                             <button onClick={onOpenFile} title={t('openFile')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><FolderOpen size={18} /> <span className="hidden sm:inline">{t('openFile')}</span></button>
                             <button onClick={onSaveFile} title={t('saveFile')} className="bg-blue-600 text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors"><Save size={18} /> <span className="hidden sm:inline">{t('saveFile')}</span></button>
                             <button onClick={onOpenHelp} title={t('help')} className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white p-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"><HelpCircle size={18} /></button>
@@ -103,7 +100,7 @@ export default function DashboardPage({
                     </div>
                 </div>
 
-                {isLoading ? (<div className="text-center py-10"><p className="text-lg text-slate-500">Cargando base de datos local...</p></div>) : (
+                {isLoading ? (<div className="text-center py-10"><p className="text-lg text-slate-500">Sincronizando con tu Solid Pod...</p></div>) : (
                     <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-2 gap-6">
                         {filteredProjects.map(project => (<ProjectCard key={project.id} project={project} onOpen={onOpenProject} onDelete={onDeleteProject} />))}
                     </div>

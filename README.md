@@ -1,51 +1,56 @@
-# Gestor de Proyectos
+# Gestor de Proyectos con Solid
 
-Una aplicación web moderna, "local-first" y PWA (Progressive Web App) para organizar tus ideas, proyectos y tareas en un solo lugar.
+Una aplicación web moderna y "local-first" construida sobre el protocolo **Solid**, que te permite organizar tus ideas, proyectos y tareas en un almacén de datos personal (**Pod**) que solo tú controlas.
 
 **[➡️ Ver la aplicación en vivo](https://pablogguizar.github.io/gestor-proyectos/)**
 
 ---
 
-## ✨ Funcionalidades Principales
+## ✨ Nuestra Filosofía: Tus Datos Son Tuyos
 
-Este gestor de proyectos está diseñado para ser rápido, privado y potente.
+Este gestor de proyectos se adhiere a un principio fundamental: **el usuario debe tener control total sobre sus datos**.
 
-* **🗄️ Almacenamiento Local (Local-First):** Utiliza la base de datos IndexedDB de tu navegador a través de Dexie.js para un acceso sin conexión rápido y fiable.
+A diferencia de las aplicaciones tradicionales que guardan tu información en sus propias bases de datos, esta herramienta se conecta directamente a tu **Solid Pod**. Un Pod es como tu disco duro personal en la web, un espacio seguro que te pertenece y que tú decides con qué aplicaciones compartir.
 
-* **🔄 Sincronización P2P en Tiempo Real (WebRTC):** Conecta múltiples dispositivos (como tu portátil y tu móvil) en la misma red de forma segura. Escanea un código QR para establecer una conexión directa y ver cómo los cambios se reflejan en tiempo real en todos tus dispositivos sincronizados.
+Esto significa que:
+- **No dependes de nosotros**: Tus proyectos, notas y tareas no están en nuestros servidores. Están en tu Pod.
+- **Privacidad por diseño**: Solo tú y las aplicaciones que autorices pueden acceder a tus datos.
+- **Portabilidad total**: Si decides dejar de usar esta aplicación, todos tus datos permanecen intactos en tu Pod, listos para ser usados por otras herramientas compatibles con Solid.
 
-* **💾 Acceso al Sistema de Archivos:** Usa la File System Access API para abrir, leer y guardar tus proyectos directamente en un archivo `.json` en tu computadora. ¡Tus datos, tu control!
+## 🚀 De P2P a Solid: Nuestra Evolución
 
-* **⭐ PWA Instalable:** Funciona como una Progressive Web App. Puedes "instalarla" en tu escritorio o móvil para una experiencia similar a una aplicación nativa, con acceso sin conexión.
+La versión anterios de esta aplicación utilizaba una conexión **P2P (Peer-to-Peer) con WebRTC** para sincronizar dispositivos en tiempo real. Aunque era una solución interesante para la sincronización instantánea, tenía una limitación importante: no ofrecía una verdadera persistencia de los datos a largo plazo.
 
-* **✏️ Gestión Completa de Proyectos (CRUD):** Crea, lee, actualiza y elimina proyectos de forma sencilla, incluyendo la capacidad de editar sus nombres.
+Decidimos evolucionar a **Solid** porque se alinea perfectamente con la visión de una web descentralizada y centrada en el usuario. El cambio a Solid nos permitió:
+-   **Eliminar las barreras de la red local**, permitiendo una sincronización universal desde cualquier lugar con internet.
+-   **Ofrecer persistencia real de los datos**, protegiéndolos de la pérdida por limpieza de caché del navegador.
+-   **Empoderar al usuario**, dándole la soberanía sobre su propia información, que es el objetivo final de este proyecto.
 
-* **📝 Tareas, Notas y Detalles:** Cada proyecto puede contener:
-    * Una lista de **tareas** con fechas de vencimiento opcionales.
-    * Una lista de **notas** con título y contenido.
-    * Una **descripción** detallada y **palabras clave** para una mejor organización.
+## 🛠️ Funcionalidades Principales
 
-* **✍️ Soporte de Texto Enriquecido:** Usa Markdown simple (`#`, `##`, `**negrita**`, `*cursiva*`) en las descripciones y notas para dar formato a tu texto.
-
-* **🔍 Búsqueda y Filtrado:** Encuentra proyectos rápidamente usando la barra de búsqueda o filtrando por palabras clave.
-
-* **🗓️ Vista de Próximas Tareas:** Un panel lateral te muestra de un vistazo las tareas con fecha límite en los próximos 7 días.
-
-* **🎨 Selector de Tema:** Elige entre tema Claro, Oscuro o el que use tu Sistema Operativo. Tu preferencia se guarda.
-
-* **🌐 Soporte Multi-idioma (i18n):** La interfaz está disponible en Español, Inglés, Catalán, Euskera y Gallego.
+* **Sincronización Universal con Solid Pods**: Conecta tu Pod de Solid y accede a tus proyectos desde cualquier dispositivo y navegador.
+* **Funcionamiento Offline-First**: Gracias a una caché local con Dexie.js, puedes seguir trabajando sin conexión. Tus cambios se sincronizarán automáticamente al reconectar.
+* **PWA Instalable**: Funciona como una Progressive Web App. Puedes "instalarla" en tu escritorio o móvil para una experiencia similar a una aplicación nativa.
+* **Gestión Completa de Proyectos (CRUD)**: Crea, lee, actualiza y elimina proyectos de forma sencilla.
+* **Tareas, Notas y Detalles**: Cada proyecto puede contener listas de tareas, notas con formato y una descripción detallada con palabras clave.
+* **Soporte de Markdown**: Usa formato simple (`#`, `**negrita**`, `*cursiva*`) en las descripciones y notas.
+* **Búsqueda y Filtrado**: Encuentra proyectos rápidamente usando la barra de búsqueda o filtrando por palabras clave.
+* **Respaldos Locales (Opcional)**: Los botones de "Exportar" e "Importar" te permiten crear copias de seguridad adicionales en formato `.json` en tu dispositivo local.
+* **Selector de Tema y Multi-idioma**: Elige entre tema Claro/Oscuro y varios idiomas para la interfaz.
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## 💻 Tecnologías Utilizadas
 
-* **React:** Para construir una interfaz de usuario interactiva y moderna.
-* **Vite:** Como herramienta de construcción y servidor de desarrollo ultra rápido.
-* **Tailwind CSS:** Para un diseño estilizado, responsivo y personalizable.
-* **Dexie.js:** Como una envoltura amigable sobre IndexedDB para la base de datos local.
-* **PeerJS:** Para simplificar la conectividad P2P a través de WebRTC.
-* **Lucide React:** Para los iconos limpios y consistentes.
-* **vite-plugin-pwa:** Para automatizar la generación de las capacidades PWA.
+* **React**: Para construir una interfaz de usuario interactiva y moderna.
+* **Vite**: Como herramienta de construcción y servidor de desarrollo ultra rápido.
+* **Tailwind CSS**: Para un diseño estilizado, responsivo y personalizable.
+* **Solid**:
+    * **@inrupt/solid-client**: Para leer y escribir datos en Solid Pods.
+    * **@inrupt/solid-client-authn-browser**: Para gestionar la autenticación de forma segura.
+* **Dexie.js**: Como una envoltura amigable sobre IndexedDB para la base de datos local que permite el funcionamiento offline.
+* **Lucide React**: Para los iconos limpios y consistentes.
+* **vite-plugin-pwa**: Para automatizar la generación de las capacidades PWA.
 
 ---
 
@@ -77,15 +82,15 @@ Si deseas ejecutar este proyecto en tu propia máquina, sigue estos pasos:
 
 ---
 
+## Créditos y Comunidad
+
+* La idea y desarrollo de **Gestor de Proyectos** fue realizada por [Pablo G. Guizar](https://github.com/PabloGGuizar) con ayuda de Gemini.
+* El repositorio de este proyecto se encuentra en: [GitHub - PabloGGuizar/gestor-proyectos](https://github.com/PabloGGuizar/gestor-proyectos).
+* Este proyecto está indexado en el **Repositorio de aplicaciones educativas**, una colección de recursos creados por la comunidad Vibe Coding Educativo.
+* Consulta más aplicaciones de esta comunidad en: [Repositorio Vibe Coding Educativo](https://vibe-coding-educativo.github.io/repositorio-apps/).
+* Únete a la comunidad en Telegram: [t.me/vceduca](https://t.me/vceduca).
+* Este proyecto se adhiere al [Decálogo del Conocimiento Abierto](https://vibe-coding-educativo.github.io/manifiesto/decalogo.html).
+
 ## Licencia
 
 Este proyecto está bajo la [Licencia Creative Commons Atribución 4.0 Internacional](http://creativecommons.org/licenses/by/4.0/).
-
-## Créditos y Comunidad
-
-* La idea y desarrollo de **Gestor de Proyectos** fue realizada por Juan Pablo Guízar ([PabloGGuizar](https://github.com/PabloGGuizar)) con ayuda de Gemini.
-* El repositorio de este proyecto se encuentra en: [GitHub - PabloGGuizar/gestor-proyectos](https://github.com/PabloGGuizar/gestor-proyectos).
-* Este proyecto está indexado en el **Repositorio de aplicaciones educativas**, una colección de recursos creados por la comunidad Vibe Coding Educativo.
-* Consulta más aplicaciones de esta comunidad en: [Repositorio Vibe Coding Educativo](https://www.google.com/search?q=https://vibe-coding-educativo.github.io/repositorio-apps/).
-* Únete a la comunidad en Telegram: [t.me/vceduca](https://t.me/vceduca).
-* Este proyecto se adhiere al [Decálogo del Conocimiento Abierto](https://www.google.com/search?q=https://vibe-coding-educativo.github.io/manifiesto/decalogo.html).
